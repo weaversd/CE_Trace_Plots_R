@@ -108,3 +108,13 @@ plot_CE <- function(file, hz = 50, xlab = 'Time (min)', ylab = 'Counts', filterb
     return(df_raw)
   }
 }
+
+
+#save as tiff
+save_as_tif <- function(object, file = 'image.tiff', w = 7, h = 5, r = 300, u = 'in'){
+  tiff(file, units = u, width = 7, height = h, res = r)
+  
+  show(object)
+  
+  dev.off()
+}
