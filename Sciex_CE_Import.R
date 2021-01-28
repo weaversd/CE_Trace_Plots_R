@@ -20,7 +20,11 @@ create_sciex_table <- function(file, channels = 3, filterby = NA, name = NA){
   
   for (i in 1:channels){
     temp_channel_name <- channels_df[[1,i]]
+    if (temp_channel_name %in% channel_list) {
+      temp_channel_name <- paste0(temp_channel_name, '*')
+    }
     channel_list[i] <- temp_channel_name
+    #print(channel_list)
   }
   
   #print(channel_list)
