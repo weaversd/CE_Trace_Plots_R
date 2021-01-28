@@ -78,7 +78,7 @@ plot_CE <- function(file, hz = 50, xlab = 'Time (min)', ylab = 'Counts', filterb
   
   
   #filter be median, default 3
-  filtered_V6 <- medfilt1(df_raw$V6, filterby)
+  filtered_V6 <- runmed(df_raw$V6, filterby)
   df_raw$filtered_V6 <- filtered_V6
   
   if (is.na(name)){
