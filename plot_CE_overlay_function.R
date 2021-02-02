@@ -173,10 +173,12 @@ peak_area <- function(df, t1, t2, baseline){
 
 
 CE_peak_area <- function(file, hz = 50, xlab = 'Time (min)', ylab = 'Counts', filterby = 3, return = "plot", name = NA,
-                         xmin = NA, xmax = NA, ymin = NA, ymax = NA, interactive = FALSE, show_int = FALSE) {
+                         xmin = NA, xmax = NA, ymin = NA, ymax = NA, interactive = FALSE, show_int = TRUE) {
   library(ggplot2)
   library(signal)
   library(plotly)
+  
+  options(digits=4, scipen=999)
   
   plot <- plot_CE(file = file, hz = hz, xlab = xlab, ylab = ylab, filterby = filterby, return = 'plot', name = name,
                   xmin = xmin, ymin = ymin, xmax = xmax, ymax = ymax, interactive = FALSE)
@@ -196,10 +198,10 @@ CE_peak_area <- function(file, hz = 50, xlab = 'Time (min)', ylab = 'Counts', fi
   if (show_int){
     plot2 <- plot + geom_vline(xintercept = area_df$starting_time, color = 'red') +
       geom_vline(xintercept = area_df$ending_time, color = 'red') + 
-      geom_line(data = df1, aes(x = time, y = filtered_V6_dx_sum), color = 'green', size = 0.5)
+      geom_line(data = df1, aes(x = time, y = filtered_V6_dx_sum), color = 'green', size = 0.5) +
+      geom_hline(yintercept = as.numeric(baseline), color = 'red')
   } else {
-    plot2 <- plot + geom_vline(xintercept = area_df$starting_time, color = 'red') +
-      geom_vline(xintercept = area_df$ending_time, color = 'red')
+    plot2 <- plot
   }
   
   plot2y <- ggplotly(plot2)
