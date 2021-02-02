@@ -1,6 +1,7 @@
 #Creating overlay functions
 library(ggplot2)
 library(signal)
+library(plotly)
 
 
 #makes a table of datapoints using V6 and time (plot_CE function)
@@ -22,7 +23,7 @@ plot_CE_overlay <- function(master_df, xlab = 'Time (min)', ylab = 'Counts',
     geom_line(aes(x=time, y=filtered_V6, color = trace)) +
     theme_bw() +
     labs(x=xlab, y=ylab)+
-    scale_x_continuous(breaks = scales::pretty_breaks(n = 20)) +
+    scale_x_continuous(breaks = scales::pretty_breaks(n = 10)) +
     theme(panel.grid = element_blank()) +
     coord_cartesian(xlim = c(xmin, xmax), ylim = c(ymin, ymax))
   return(overlay)
@@ -66,7 +67,7 @@ zoom_plot <- function(plot, xmin = NA, xmax =NA, ymin = NA, ymax = NA){
 
 #The base plot function
 plot_CE <- function(file, hz = 50, xlab = 'Time (min)', ylab = 'Counts', filterby = 3, return = "plot", name = NA,
-                    xmin = NA, xmax = NA, ymin = NA, ymax = NA){
+                    xmin = NA, xmax = NA, ymin = NA, ymax = NA, interactive = FALSE){
   
   
   #import from text file
@@ -89,6 +90,22 @@ plot_CE <- function(file, hz = 50, xlab = 'Time (min)', ylab = 'Counts', filterb
     trace_name <- name
   }
   
+  min_per_point <- 1/hz/60
+  df_raw$V6_dx <- df_raw$V6 * min_per_point
+  df_raw$V6_dx_sum <- 0
+  
+  
+  df_raw$filtered_V6_dx <- df_raw$filtered_V6 * min_per_point
+  df_raw$filtered_V6_dx_sum <- 0
+  
+  for (i in 2:(nrow(df_raw))) {
+    df_raw$V6_dx_sum[i] <- df_raw$V6_dx_sum[i-1] + df_raw$V6_dx[i]
+  }
+  
+  for (i in 2:(nrow(df_raw))) {
+    df_raw$filtered_V6_dx_sum[i] <- df_raw$filtered_V6_dx_sum[i-1] + df_raw$filtered_V6_dx[i]
+  }
+  
   #add file name to df
   df_raw$trace <- trace_name
   
@@ -100,6 +117,10 @@ plot_CE <- function(file, hz = 50, xlab = 'Time (min)', ylab = 'Counts', filterb
     scale_x_continuous(breaks = scales::pretty_breaks(n = 20)) +
     theme(panel.grid = element_blank()) +
     coord_cartesian(xlim = c(xmin, xmax), ylim = c(ymin, ymax))
+  
+  if (interactive == TRUE){
+    plot <- ggplotly(plot)
+  }
   
   if (return == "plot"){
     #show plot
@@ -117,4 +138,62 @@ save_as_tif <- function(object, file = 'image.tiff', w = 7, h = 5, r = 300, u = 
   show(object)
   
   dev.off()
+}
+
+#get peak area
+peak_area <- function(df, t1, t2){
+  t1_index <- which.min(abs(df$time-t1))
+  #print(t1_index)
+  t2_index <- which.min(abs(df$time-t2))
+  #print(t2_index)
+  time1_filtered_V6_dx_sum <- df$filtered_V6_dx_sum[t1_index]
+  #print(time1_filtered_V6_dx_sum)
+  time2_filtered_V6_dx_sum <- df$filtered_V6_dx_sum[t2_index]
+  #print(time2_filtered_V6_dx_sum)
+  
+  area <- time2_filtered_V6_dx_sum - time1_filtered_V6_dx_sum
+  peak_time <- (t1 + t2) / 2
+  
+  print(paste0('Peak Migration time: ', peak_time, ' min'))
+  print(paste0('Peak Area: ', area, ' counts*minutes'))
+  print(paste0('Time-Corrected Peak Area: ', area/peak_time))
+  tca <- area/peak_time
+  
+  migration_time <- c(peak_time)
+  area <- c(area)
+  corrected_area <- c(tca)
+  starting_time <- c(df$time[t1_index])
+  ending_time <- c(df$time[t2_index])
+  
+  
+  return_df <- data.frame(migration_time, area, corrected_area, starting_time, ending_time)
+}
+
+
+CE_peak_area <- function(file, hz = 50, xlab = 'Time (min)', ylab = 'Counts', filterby = 3, return = "plot", name = NA,
+                         xmin = NA, xmax = NA, ymin = NA, ymax = NA, interactive = FALSE) {
+  library(ggplot2)
+  library(signal)
+  library(plotly)
+  
+  plot <- plot_CE(file = file, hz = hz, xlab = xlab, ylab = ylab, filterby = filterby, return = 'plot', name = name,
+                  xmin = xmin, ymin = ymin, xmax = xmax, ymax = ymax, interactive = FALSE)
+  ploty <- ggplotly(plot)
+  
+  show(ploty)
+  
+  time_start <- readline(prompt = 'peak start: ')
+  time_end <- readline(prompt = 'peak end: ')
+  
+  df1 <- plot_CE(file = file, hz = hz, xlab = xlab, ylab = ylab, filterby = filterby, return = 'df', name = name,
+                 xmin = xmin, ymin = ymin, xmax = xmax, ymax = ymax, interactive = FALSE)
+  
+  area_df <- peak_area(df1, as.numeric(time_start), as.numeric(time_end))
+  
+  plot2 <- plot + geom_vline(xintercept = area_df$starting_time, color = 'red') +
+    geom_vline(xintercept = area_df$ending_time, color = 'red')
+  
+  plot2y <- ggplotly(plot2)
+  show(plot2y)
+  
 }
