@@ -141,7 +141,7 @@ save_as_tif <- function(object, file = 'image.tiff', w = 7, h = 5, r = 300, u = 
 }
 
 #get peak area
-peak_area <- function(df, t1, t2){
+peak_area <- function(df, t1, t2, baseline){
   t1_index <- which.min(abs(df$time-t1))
   #print(t1_index)
   t2_index <- which.min(abs(df$time-t2))
@@ -152,15 +152,17 @@ peak_area <- function(df, t1, t2){
   #print(time2_filtered_V6_dx_sum)
   
   area <- time2_filtered_V6_dx_sum - time1_filtered_V6_dx_sum
+  baseline_chunk <- (t2 - t1)*baseline
+  area_true <- area - baseline_chunk
   peak_time <- (t1 + t2) / 2
   
   print(paste0('Peak Migration time: ', peak_time, ' min'))
-  print(paste0('Peak Area: ', area, ' counts*minutes'))
+  print(paste0('Peak Area: ', area_true, ' counts*minutes'))
   print(paste0('Time-Corrected Peak Area: ', area/peak_time))
   tca <- area/peak_time
   
   migration_time <- c(peak_time)
-  area <- c(area)
+  area <- c(area_true)
   corrected_area <- c(tca)
   starting_time <- c(df$time[t1_index])
   ending_time <- c(df$time[t2_index])
@@ -171,7 +173,7 @@ peak_area <- function(df, t1, t2){
 
 
 CE_peak_area <- function(file, hz = 50, xlab = 'Time (min)', ylab = 'Counts', filterby = 3, return = "plot", name = NA,
-                         xmin = NA, xmax = NA, ymin = NA, ymax = NA, interactive = FALSE) {
+                         xmin = NA, xmax = NA, ymin = NA, ymax = NA, interactive = FALSE, show_int = FALSE) {
   library(ggplot2)
   library(signal)
   library(plotly)
@@ -184,14 +186,21 @@ CE_peak_area <- function(file, hz = 50, xlab = 'Time (min)', ylab = 'Counts', fi
   
   time_start <- readline(prompt = 'peak start: ')
   time_end <- readline(prompt = 'peak end: ')
+  baseline <- readline(prompt = 'baseline counts: ')
   
   df1 <- plot_CE(file = file, hz = hz, xlab = xlab, ylab = ylab, filterby = filterby, return = 'df', name = name,
                  xmin = xmin, ymin = ymin, xmax = xmax, ymax = ymax, interactive = FALSE)
   
-  area_df <- peak_area(df1, as.numeric(time_start), as.numeric(time_end))
+  area_df <- peak_area(df1, as.numeric(time_start), as.numeric(time_end), as.numeric(baseline))
   
-  plot2 <- plot + geom_vline(xintercept = area_df$starting_time, color = 'red') +
-    geom_vline(xintercept = area_df$ending_time, color = 'red')
+  if (show_int){
+    plot2 <- plot + geom_vline(xintercept = area_df$starting_time, color = 'red') +
+      geom_vline(xintercept = area_df$ending_time, color = 'red') + 
+      geom_line(data = df1, aes(x = time, y = filtered_V6_dx_sum), color = 'green', size = 0.5)
+  } else {
+    plot2 <- plot + geom_vline(xintercept = area_df$starting_time, color = 'red') +
+      geom_vline(xintercept = area_df$ending_time, color = 'red')
+  }
   
   plot2y <- ggplotly(plot2)
   show(plot2y)

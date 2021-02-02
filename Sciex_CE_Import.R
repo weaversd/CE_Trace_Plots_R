@@ -116,7 +116,7 @@ create_sciex_table <- function(file, channels = 3, filterby = NA, name = NA){
 }
 
 plot_sciex_CE <- function(df, x_axis = 'minutes', y_axis = 'RFU', filtered = FALSE,
-                          xlab = 'Time (min)', ylab = 'RFU', xmin = NA, xmax = NA,
+                          xlab = 'Time (min)', ylab = 'Response', xmin = NA, xmax = NA,
                           ymax = NA, ymin = NA){
 
   if (x_axis == 'seconds') {
@@ -171,7 +171,7 @@ create_sciex_master_df <- function(folder, channels = 3, filterby = NA){
 }
 
 plot_sciex_overlay <-  function(df, x_axis = 'minutes', y_axis = 'RFU', filtered = FALSE,
-                                                xlab = 'Time (min)', ylab = 'RFU', xmin = NA, xmax = NA,
+                                                xlab = 'Time (min)', ylab = 'Response', xmin = NA, xmax = NA,
                                                 ymax = NA, ymin = NA){
   
   if (x_axis == 'seconds') {
@@ -205,7 +205,7 @@ plot_sciex_overlay <-  function(df, x_axis = 'minutes', y_axis = 'RFU', filtered
 
 #loops through a directory and creates a master dataframe, then plots using plot_CE_overlay
 overlay_sciex_directory <- function(folder, channels = 3, filterby = NA, x_axis = 'minutes', y_axis = 'RFU', 
-                                    filtered = FALSE, xlab = 'Time (min)', ylab = 'RFU', xmin = NA, xmax = NA,
+                                    filtered = FALSE, xlab = 'Time (min)', ylab = 'Response', xmin = NA, xmax = NA,
                                     ymax = NA, ymin = NA, return = "plot"){
   wd <- getwd()
   
