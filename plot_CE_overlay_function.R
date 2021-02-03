@@ -2,6 +2,7 @@
 library(ggplot2)
 library(signal)
 library(plotly)
+library(dplyr)
 
 
 #makes a table of datapoints using V6 and time (plot_CE function)
@@ -177,6 +178,7 @@ CE_peak_area <- function(file, hz = 50, xlab = 'Time (min)', ylab = 'Counts', fi
   library(ggplot2)
   library(signal)
   library(plotly)
+  library(dplyr)
   
   options(digits=4, scipen=999)
   
@@ -186,6 +188,9 @@ CE_peak_area <- function(file, hz = 50, xlab = 'Time (min)', ylab = 'Counts', fi
   
   show(ploty)
   
+  print('Enter peak start and end in minutes, and baseline level in counts')
+  print('Zoom in on the plot and hover over the trace to obtain values')
+  print('filtered_V6 is the number of counts, time is in minutes')
   time_start <- readline(prompt = 'peak start: ')
   time_end <- readline(prompt = 'peak end: ')
   baseline <- readline(prompt = 'baseline counts: ')
@@ -193,18 +198,67 @@ CE_peak_area <- function(file, hz = 50, xlab = 'Time (min)', ylab = 'Counts', fi
   df1 <- plot_CE(file = file, hz = hz, xlab = xlab, ylab = ylab, filterby = filterby, return = 'df', name = name,
                  xmin = xmin, ymin = ymin, xmax = xmax, ymax = ymax, interactive = FALSE)
   
-  area_df <- peak_area(df1, as.numeric(time_start), as.numeric(time_end), as.numeric(baseline))
+  area_df <- peak_area_height_time(df1, as.numeric(time_start), as.numeric(time_end), as.numeric(baseline))
   
   if (show_int){
     plot2 <- plot + geom_vline(xintercept = area_df$starting_time, color = 'red') +
       geom_vline(xintercept = area_df$ending_time, color = 'red') + 
       geom_line(data = df1, aes(x = time, y = filtered_V6_dx_sum), color = 'green', size = 0.5) +
       geom_hline(yintercept = as.numeric(baseline), color = 'red')
+    print("Integration Shown")
   } else {
     plot2 <- plot
   }
   
   plot2y <- ggplotly(plot2)
   show(plot2y)
-  
 }
+
+
+peak_area_height_time <- function(df, t1, t2, baseline){
+  t1_index <- which.min(abs(df$time-t1))
+  #print(t1_index)
+  t2_index <- which.min(abs(df$time-t2))
+  #print(t2_index)
+  time1_filtered_V6_dx_sum <- df$filtered_V6_dx_sum[t1_index]
+  #print(time1_filtered_V6_dx_sum)
+  time2_filtered_V6_dx_sum <- df$filtered_V6_dx_sum[t2_index]
+  #print(time2_filtered_V6_dx_sum)
+  
+  
+  df_peak <- df[t1_index:t2_index,]
+  
+  apex_index <- which.max(df_peak$filtered_V6)
+  #print(apex_index)
+  #print(df_peak[apex_index,])
+  peak_time <- df_peak$time[apex_index]
+  peak_height <- df_peak$filtered_V6[apex_index]
+  
+  
+  area <- time2_filtered_V6_dx_sum - time1_filtered_V6_dx_sum
+  baseline_chunk <- (t2 - t1)*baseline
+  area_true <- area - baseline_chunk
+  
+  print(paste0('Peak Migration time: ', round(peak_time, 4), ' min'))
+  print(paste0('Peak Height: ', peak_height, ' counts'))
+  print(paste0('Peak Area: ', round(area_true, 4), ' counts*minutes'))
+  print(paste0('Time-Corrected Peak Area: ', round(area/peak_time, 4)))
+  tca <- area/peak_time
+  
+  migration_time <- c(peak_time)
+  area <- c(area_true)
+  corrected_area <- c(tca)
+  starting_time <- c(df$time[t1_index])
+  ending_time <- c(df$time[t2_index])
+  height <- c(peak_height)
+  
+  
+  return_df <- data.frame(migration_time, height, area, corrected_area, starting_time, ending_time)
+}
+
+
+
+
+
+
+
