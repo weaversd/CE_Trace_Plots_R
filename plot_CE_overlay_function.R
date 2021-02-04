@@ -161,15 +161,29 @@ CE_peak_area <- function(file, hz = 50, xlab = 'Time (min)', ylab = 'Counts', fi
   
   show(ploty)
   
-  print('Enter peak start and end in minutes, and baseline level in counts')
+  print('Enter peak start and end in minutes')
+  print('Find a flat region of baseline, and enter the start and end time in minutes')
   print('Zoom in on the plot and hover over the trace to obtain values')
-  print('filtered_V6 is the number of counts, time is in minutes')
+  print('time is in minutes')
   time_start <- readline(prompt = 'peak start: ')
   time_end <- readline(prompt = 'peak end: ')
-  baseline <- readline(prompt = 'baseline counts: ')
+  #baseline <- readline(prompt = 'baseline counts: ')
+  baseline_start <- as.numeric(readline(prompt = 'baseline start: '))
+  baseline_end <- as.numeric(readline(prompt = 'baseline end: '))
+  
   
   df1 <- plot_CE(file = file, hz = hz, xlab = xlab, ylab = ylab, filterby = filterby, return = 'df', name = name,
                  xmin = xmin, ymin = ymin, xmax = xmax, ymax = ymax, interactive = FALSE)
+  
+  baseline_index_start <- which.min(abs(df1$time-baseline_start))
+  baseline_index_end <- which.min(abs(df1$time-baseline_end))
+  
+  #print(baseline_index_start)
+  #print(baseline_index_end)
+  
+  df_baseline <- df1[baseline_index_start:baseline_index_end,]
+  baseline <- mean(df_baseline$filtered_V6)
+  #print(baseline_mean)
   
   area_df <- peak_area_height_time(df1, as.numeric(time_start), as.numeric(time_end), as.numeric(baseline))
   
